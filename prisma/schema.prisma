@@ -1,0 +1,352 @@
+// =====================================
+// Prisma Schema — O'quv Markaz Backend
+// =====================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================
+// ENUMS
+// =====================================
+
+enum UserRole {
+  super_admin
+  admin
+  teacher
+  student
+}
+
+enum UserStatus {
+  active
+  inactive
+  banned
+}
+
+enum Gender {
+  male
+  female
+}
+
+enum StudentStatus {
+  active
+  inactive
+  graduated
+}
+
+enum TeacherStatus {
+  active
+  on_leave
+  inactive
+}
+
+enum CourseLevel {
+  beginner
+  intermediate
+  advanced
+}
+
+enum CourseStatus {
+  draft
+  active
+  archived
+}
+
+enum GroupStatus {
+  upcoming
+  active
+  completed
+  cancelled
+}
+
+enum GroupFormat {
+  offline
+  online
+  hybrid
+}
+
+enum GroupStudentStatus {
+  active
+  left
+  completed
+}
+
+enum LessonStatus {
+  scheduled
+  completed
+  cancelled
+}
+
+// =====================================
+// USERS
+// =====================================
+
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  email           String     @unique
+  phone           String     @unique
+  passwordHash    String     @map("password_hash")
+  role            UserRole   @default(student)
+  status          UserStatus @default(active)
+  firstName       String     @map("first_name")
+  lastName        String     @map("last_name")
+  middleName      String?    @map("middle_name")
+  birthDate       DateTime?  @map("birth_date") @db.Date
+  gender          Gender?
+  address         String?
+  avatarUrl       String?    @map("avatar_url")
+  emailVerifiedAt DateTime?  @map("email_verified_at")
+  phoneVerifiedAt DateTime?  @map("phone_verified_at")
+  lastLoginAt     DateTime?  @map("last_login_at")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  deletedAt       DateTime?  @map("deleted_at")
+
+  // Relations
+  student        Student?
+  teacher        Teacher?
+  sessions       Session[]
+  passwordResets PasswordResetToken[]
+  emailVerifications EmailVerificationToken[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Student {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @unique @map("user_id") @db.Uuid
+  studentId       String        @unique @map("student_id") // ST-0123
+  parentFirstName String        @map("parent_first_name")
+  parentLastName  String        @map("parent_last_name")
+  parentPhone     String        @map("parent_phone")
+  motherName      String?       @map("mother_name")
+  motherPhone     String?       @map("mother_phone")
+  enrolledAt      DateTime      @map("enrolled_at") @db.Date
+  status          StudentStatus @default(active)
+
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groups GroupStudent[]
+
+  @@index([studentId])
+  @@map("students")
+}
+
+model Teacher {
+  id          String        @id @default(uuid()) @db.Uuid
+  userId      String        @unique @map("user_id") @db.Uuid
+  teacherId   String        @unique @map("teacher_id") // TC-001
+  specialty   String
+  experience  Int           @default(0)
+  bio         String?
+  hireDate    DateTime      @map("hire_date") @db.Date
+  salary      Decimal       @default(0) @db.Decimal(15, 2)
+  rating      Decimal       @default(0) @db.Decimal(3, 2)
+  socialLinks Json?         @map("social_links") // {github, linkedin, telegram}
+  status      TeacherStatus @default(active)
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groups Group[]
+
+  @@index([teacherId])
+  @@map("teachers")
+}
+
+// =====================================
+// SESSIONS (refresh tokens)
+// =====================================
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  device       String?
+  refreshToken String   @unique @map("refresh_token") @db.Text
+  expiresAt    DateTime @map("expires_at")
+  lastActiveAt DateTime @default(now()) @map("last_active_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// =====================================
+// AUTH TOKENS (forgot password, email verify)
+// =====================================
+
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// =====================================
+// COURSES
+// =====================================
+
+model Course {
+  id              String       @id @default(uuid()) @db.Uuid
+  name            String
+  slug            String       @unique
+  description     String       @db.Text
+  longDescription String       @map("long_description") @db.Text
+  category        String
+  level           CourseLevel  @default(beginner)
+  price           Decimal      @default(0) @db.Decimal(15, 2)
+  oldPrice        Decimal?     @map("old_price") @db.Decimal(15, 2)
+  durationMonths  Int          @default(1) @map("duration_months")
+  lessonsCount    Int          @default(0) @map("lessons_count")
+  imageUrl        String?      @map("image_url")
+  isFeatured      Boolean      @default(false) @map("is_featured")
+  rating          Decimal      @default(0) @db.Decimal(3, 2)
+  ratingCount     Int          @default(0) @map("rating_count")
+  status          CourseStatus @default(draft)
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  modules CourseModule[]
+  groups  Group[]
+
+  @@index([slug])
+  @@index([category])
+  @@index([status])
+  @@index([isFeatured])
+  @@map("courses")
+}
+
+model CourseModule {
+  id       String @id @default(uuid()) @db.Uuid
+  courseId String @map("course_id") @db.Uuid
+  title    String
+  order    Int    @default(0)
+
+  course  Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons CourseLesson[]
+
+  @@index([courseId])
+  @@map("course_modules")
+}
+
+model CourseLesson {
+  id              String @id @default(uuid()) @db.Uuid
+  moduleId        String @map("module_id") @db.Uuid
+  title           String
+  durationMinutes Int    @default(0) @map("duration_minutes")
+  order           Int    @default(0)
+
+  module CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@index([moduleId])
+  @@map("course_lessons")
+}
+
+// =====================================
+// GROUPS
+// =====================================
+
+model Group {
+  id              String      @id @default(uuid()) @db.Uuid
+  name            String      @unique // "Frontend-01"
+  courseId        String      @map("course_id") @db.Uuid
+  teacherId       String      @map("teacher_id") @db.Uuid
+  startDate       DateTime    @map("start_date") @db.Date
+  endDate         DateTime?   @map("end_date") @db.Date
+  status          GroupStatus @default(upcoming)
+  maxStudents     Int         @default(20) @map("max_students")
+  currentStudents Int         @default(0) @map("current_students")
+  room            String?
+  format          GroupFormat @default(offline)
+  scheduleDays    Json        @map("schedule_days") // ["mon", "wed", "fri"]
+  scheduleTime    String      @map("schedule_time") // "09:00"
+  monthlyPrice    Decimal     @default(0) @map("monthly_price") @db.Decimal(15, 2)
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  course   Course         @relation(fields: [courseId], references: [id])
+  teacher  Teacher        @relation(fields: [teacherId], references: [id])
+  students GroupStudent[]
+  lessons  Lesson[]
+
+  @@index([courseId])
+  @@index([teacherId])
+  @@index([status])
+  @@map("groups")
+}
+
+model GroupStudent {
+  groupId    String             @map("group_id") @db.Uuid
+  studentId  String             @map("student_id") @db.Uuid
+  enrolledAt DateTime           @default(now()) @map("enrolled_at")
+  leftAt     DateTime?          @map("left_at")
+  status     GroupStudentStatus @default(active)
+
+  group   Group   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, studentId])
+  @@index([studentId])
+  @@index([status])
+  @@map("group_students")
+}
+
+// =====================================
+// LESSONS (jadval — calendar uchun)
+// =====================================
+
+model Lesson {
+  id        String       @id @default(uuid()) @db.Uuid
+  groupId   String       @map("group_id") @db.Uuid
+  date      DateTime     @db.Date
+  startTime String       @map("start_time") // "09:00"
+  endTime   String       @map("end_time") // "11:00"
+  room      String?
+  topic     String
+  status    LessonStatus @default(scheduled)
+  notes     String?      @db.Text
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([date])
+  @@index([status])
+  @@map("lessons")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("email_verification_tokens")
+}

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir)",
+      "Bash(dir /a)",
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(npx prisma *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"EXITCODE=$?\")",
+      "Bash(npm run *)",
+      "Bash(docker compose *)",
+      "Bash(DATABASE_URL='postgresql://postgres:postgres@localhost:5432/oquv_markaz?schema=public' npx prisma migrate dev --name init)",
+      "Bash(docker exec *)",
+      "Bash(node -e \"console.log\\(JSON.stringify\\(process.env.DATABASE_URL\\)\\)\")",
+      "Bash(node -e \"require\\('dotenv'\\).config\\(\\); console.log\\(JSON.stringify\\(process.env.DATABASE_URL\\)\\)\")"
+    ]
+  }
+}

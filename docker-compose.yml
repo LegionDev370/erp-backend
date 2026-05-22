@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: oquv_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: oquv_markaz
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - '5433:5432'   # 5433 → kompyuterda allaqachon native Postgres 5432'da ishlamoqda
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d oquv_markaz']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: oquv_redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  adminer:
+    image: adminer:latest
+    container_name: oquv_adminer
+    restart: unless-stopped
+    ports:
+      - '8080:8080'
+    depends_on:
+      - postgres
+
+  # NestJS ilovasi (ixtiyoriy — odatda dev'da lokal "npm run start:dev" ishlatiladi)
+  # app:
+  #   build: .
+  #   container_name: oquv_app
+  #   restart: unless-stopped
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   environment:
+  #     NODE_ENV: production
+  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/oquv_markaz?schema=public
+  #     REDIS_URL: redis://redis:6379
+  #   env_file:
+  #     - .env
+  #   ports:
+  #     - '3000:3000'
+
+volumes:
+  pgdata:
