@@ -19,6 +19,8 @@ import {
   GroupFormat,
   GroupStatus,
   LessonStatus,
+  PaymentMethod,
+  PaymentStatus,
   PrismaClient,
   StudentExamStatus,
   UserRole,
@@ -404,10 +406,111 @@ async function seedAcademics() {
   }
 }
 
+// ============================================================
+// PAYMENTS + EXPENSES
+// ============================================================
+async function seedFinance() {
+  console.log('💰 Seeding payments + expense categories + expenses...');
+
+  const group = await prisma.group.findUnique({ where: { name: 'Frontend-01' } });
+  const student = await prisma.student.findFirst({ where: { studentId: 'ST-0001' } });
+  const admin = await prisma.user.findUnique({ where: { email: 'admin@oquv.uz' } });
+
+  if (!group || !student || !admin) {
+    console.log("  ⚠ Group/student/admin topilmadi - skip");
+    return;
+  }
+
+  // 2 ta to'lov: 1 paid (sentyabr), 1 pending (oktyabr)
+  const sept = await prisma.payment.findFirst({
+    where: { studentId: student.id, dueDate: new Date('2026-09-01') },
+  });
+  if (!sept) {
+    await prisma.payment.create({
+      data: {
+        studentId: student.id,
+        groupId: group.id,
+        amount: 500000,
+        method: PaymentMethod.click,
+        status: PaymentStatus.paid,
+        paidAt: new Date('2026-09-05T10:30:00Z'),
+        dueDate: new Date('2026-09-01'),
+        transactionId: 'CLK-2026090501',
+        notes: "Sentyabr oyligi",
+      },
+    });
+    console.log(`  ✓ Payment: ST-0001 Sep paid (500k)`);
+  }
+  const oct = await prisma.payment.findFirst({
+    where: { studentId: student.id, dueDate: new Date('2026-10-01') },
+  });
+  if (!oct) {
+    await prisma.payment.create({
+      data: {
+        studentId: student.id,
+        groupId: group.id,
+        amount: 500000,
+        method: PaymentMethod.cash,
+        status: PaymentStatus.pending,
+        dueDate: new Date('2026-10-01'),
+      },
+    });
+    console.log(`  ✓ Payment: ST-0001 Oct pending (500k)`);
+  }
+
+  // Xarajat kategoriyalari
+  const categories = [
+    { name: 'Ish haqi', color: '#10B981' },
+    { name: 'Ijara', color: '#F59E0B' },
+    { name: 'Marketing', color: '#2563EB' },
+    { name: 'Kommunal', color: '#EF4444' },
+    { name: 'Boshqa', color: '#6B7280' },
+  ];
+  for (const c of categories) {
+    await prisma.expenseCategory.upsert({
+      where: { name: c.name },
+      update: {},
+      create: c,
+    });
+  }
+  console.log(`  ✓ ${categories.length} expense categories upserted`);
+
+  // 3 ta namuna xarajat (sentyabr 2026)
+  const ijara = await prisma.expenseCategory.findUnique({ where: { name: 'Ijara' } });
+  const ishHaqi = await prisma.expenseCategory.findUnique({ where: { name: 'Ish haqi' } });
+  const marketing = await prisma.expenseCategory.findUnique({ where: { name: 'Marketing' } });
+
+  if (ijara && ishHaqi && marketing) {
+    const samples = [
+      { category: ijara, description: "Ofis ijarasi - Sentyabr", amount: 5000000, date: '2026-09-01' },
+      { category: ishHaqi, description: "O'qituvchilar maoshi", amount: 8000000, date: '2026-09-05' },
+      { category: marketing, description: "Instagram reklamasi", amount: 1200000, date: '2026-09-10' },
+    ];
+    for (const s of samples) {
+      const exists = await prisma.expense.findFirst({
+        where: { description: s.description, date: new Date(s.date) },
+      });
+      if (!exists) {
+        await prisma.expense.create({
+          data: {
+            categoryId: s.category.id,
+            description: s.description,
+            amount: s.amount,
+            date: new Date(s.date),
+            createdBy: admin.id,
+          },
+        });
+      }
+    }
+    console.log(`  ✓ 3 sample expenses (Sep 2026)`);
+  }
+}
+
 main()
   .then(() => seedCourses())
   .then(() => seedGroups())
   .then(() => seedAcademics())
+  .then(() => seedFinance())
   .then(() => console.log('✅ All done.'))
   .catch((e) => {
     console.error(e);
