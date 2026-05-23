@@ -19,13 +19,18 @@ import { UpdateGroupDto } from './dto/update-group.dto';
 import { QueryGroupsDto } from './dto/query-groups.dto';
 import { EnrollStudentDto } from './dto/enroll-student.dto';
 import { Roles } from '../common/decorators/roles.decorator';
+import { AttendanceService } from '../attendance/attendance.service';
+import { QueryAttendanceMatrixDto } from '../attendance/dto/query-attendance.dto';
 
 @ApiTags('Admin · Groups')
 @ApiBearerAuth('access-token')
 @Roles('admin', 'super_admin')
 @Controller('admin/groups')
 export class GroupsController {
-  constructor(private readonly groupsService: GroupsService) {}
+  constructor(
+    private readonly groupsService: GroupsService,
+    private readonly attendanceService: AttendanceService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: "Guruhlar ro'yxati (filter: course, teacher, status, format)" })
@@ -87,5 +92,14 @@ export class GroupsController {
     @Param('studentId', new ParseUUIDPipe()) studentId: string,
   ) {
     return this.groupsService.removeStudent(id, studentId);
+  }
+
+  @Get(':id/attendance-matrix')
+  @ApiOperation({ summary: 'Davomat matritsasi (talaba×dars)' })
+  attendanceMatrix(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query() q: QueryAttendanceMatrixDto,
+  ) {
+    return this.attendanceService.matrix(id, q);
   }
 }

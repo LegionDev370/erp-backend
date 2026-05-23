@@ -28,13 +28,19 @@ import { UpdateStudentDto } from './dto/update-student.dto';
 import { QueryStudentsDto } from './dto/query-students.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { AVATAR_OPTIONS, buildMulterOptions, fileToUrl } from '../common/utils/multer.config';
+import { AttendanceService } from '../attendance/attendance.service';
+import { AssignmentsService } from '../assignments/assignments.service';
 
 @ApiTags('Admin · Students')
 @ApiBearerAuth('access-token')
 @Roles('admin', 'super_admin')
 @Controller('admin/students')
 export class StudentsController {
-  constructor(private readonly studentsService: StudentsService) {}
+  constructor(
+    private readonly studentsService: StudentsService,
+    private readonly attendanceService: AttendanceService,
+    private readonly assignmentsService: AssignmentsService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Talabalar ro\'yxati (pagination + filter)' })
@@ -69,6 +75,18 @@ export class StudentsController {
   @ApiOperation({ summary: 'Talabani o\'chirish (soft delete)' })
   remove(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.studentsService.remove(id);
+  }
+
+  @Get(':id/attendance')
+  @ApiOperation({ summary: "Talaba davomat tarixi (statistika bilan)" })
+  attendanceHistory(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.attendanceService.studentHistory(id);
+  }
+
+  @Get(':id/grades')
+  @ApiOperation({ summary: "Talaba baholar tarixi (vazifalar)" })
+  gradesHistory(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.assignmentsService.studentGrades(id);
   }
 
   @Post(':id/avatar')

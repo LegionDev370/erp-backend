@@ -18,6 +18,9 @@ import { TeachersModule } from './teachers/teachers.module';
 import { CoursesModule } from './courses/courses.module';
 import { GroupsModule } from './groups/groups.module';
 import { ScheduleModule } from './schedule/schedule.module';
+import { AttendanceModule } from './attendance/attendance.module';
+import { AssignmentsModule } from './assignments/assignments.module';
+import { ExamsModule } from './exams/exams.module';
 import { PublicModule } from './public/public.module';
 import { HealthController } from './health.controller';
 
@@ -62,6 +65,9 @@ import { HealthController } from './health.controller';
     CoursesModule,
     GroupsModule,
     ScheduleModule,
+    AttendanceModule,
+    AssignmentsModule,
+    ExamsModule,
     PublicModule,
   ],
   controllers: [HealthController],

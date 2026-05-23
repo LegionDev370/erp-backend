@@ -11,12 +11,16 @@
  *   - student@oquv.uz      / Student123
  */
 import {
+  AssignmentStatus,
+  AttendanceStatus,
   CourseLevel,
   CourseStatus,
+  ExamStatus,
   GroupFormat,
   GroupStatus,
   LessonStatus,
   PrismaClient,
+  StudentExamStatus,
   UserRole,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -309,9 +313,101 @@ async function seedGroups() {
   console.log(`  ✓ Frontend-01 + 1 student + 3 lessons`);
 }
 
+// ============================================================
+// ATTENDANCE + ASSIGNMENTS + EXAMS
+// ============================================================
+async function seedAcademics() {
+  console.log('📝 Seeding attendance + assignments + exams...');
+
+  const group = await prisma.group.findUnique({ where: { name: 'Frontend-01' } });
+  const admin = await prisma.user.findUnique({ where: { email: 'admin@oquv.uz' } });
+  const student = await prisma.student.findFirst({ where: { studentId: 'ST-0001' } });
+
+  if (!group || !admin || !student) {
+    console.log("  ⚠ Group/admin/student topilmadi - skip");
+    return;
+  }
+
+  // Davomat — 1-darsda 'present' deb belgilaymiz
+  const firstLesson = await prisma.lesson.findFirst({
+    where: { groupId: group.id },
+    orderBy: { date: 'asc' },
+  });
+  if (firstLesson) {
+    const existsAtt = await prisma.attendance.findUnique({
+      where: { lessonId_studentId: { lessonId: firstLesson.id, studentId: student.id } },
+    });
+    if (!existsAtt) {
+      await prisma.attendance.create({
+        data: {
+          lessonId: firstLesson.id,
+          studentId: student.id,
+          status: AttendanceStatus.present,
+          markedBy: admin.id,
+          note: 'Faol qatnashdi',
+        },
+      });
+      console.log(`  ✓ Attendance for ST-0001 (lesson 1: present)`);
+    }
+  }
+
+  // Vazifa
+  const existingAssign = await prisma.assignment.findFirst({
+    where: { groupId: group.id, title: 'Vazifa 1: HTML loyiha' },
+  });
+  if (!existingAssign) {
+    const assign = await prisma.assignment.create({
+      data: {
+        groupId: group.id,
+        title: 'Vazifa 1: HTML loyiha',
+        description: 'HTML5 va semantik teglar bilan oddiy portfolio sahifa yaratish',
+        dueDate: new Date('2026-09-25T23:59:00Z'),
+        maxScore: 100,
+        createdBy: admin.id,
+        submissions: {
+          create: {
+            studentId: student.id,
+            status: AssignmentStatus.graded,
+            grade: 85,
+            comment: "Yaxshi ish, lekin alt atributlari yetishmadi",
+            submittedAt: new Date('2026-09-24T20:00:00Z'),
+          },
+        },
+      },
+    });
+    console.log(`  ✓ Assignment "${assign.title}" (1 submission graded: 85)`);
+  }
+
+  // Imtihon
+  const existingExam = await prisma.exam.findFirst({
+    where: { groupId: group.id, title: 'Oraliq imtihon' },
+  });
+  if (!existingExam) {
+    const exam = await prisma.exam.create({
+      data: {
+        groupId: group.id,
+        title: 'Oraliq imtihon',
+        date: new Date('2026-11-15T10:00:00Z'),
+        durationMinutes: 90,
+        questionsCount: 30,
+        maxScore: 100,
+        status: ExamStatus.upcoming,
+        results: {
+          create: {
+            studentId: student.id,
+            status: StudentExamStatus.pending,
+          },
+        },
+      },
+    });
+    console.log(`  ✓ Exam "${exam.title}" (upcoming, 1 pending result)`);
+  }
+}
+
 main()
   .then(() => seedCourses())
   .then(() => seedGroups())
+  .then(() => seedAcademics())
   .then(() => console.log('✅ All done.'))
   .catch((e) => {
     console.error(e);

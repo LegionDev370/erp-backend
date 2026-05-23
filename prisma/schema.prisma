@@ -82,6 +82,31 @@ enum LessonStatus {
   cancelled
 }
 
+enum AttendanceStatus {
+  present
+  late
+  absent
+}
+
+enum AssignmentStatus {
+  pending
+  submitted
+  graded
+}
+
+enum ExamStatus {
+  upcoming
+  active
+  completed
+  cancelled
+}
+
+enum StudentExamStatus {
+  pending
+  completed
+  missed
+}
+
 // =====================================
 // USERS
 // =====================================
@@ -108,11 +133,13 @@ model User {
   deletedAt       DateTime?  @map("deleted_at")
 
   // Relations
-  student        Student?
-  teacher        Teacher?
-  sessions       Session[]
-  passwordResets PasswordResetToken[]
-  emailVerifications EmailVerificationToken[]
+  student               Student?
+  teacher               Teacher?
+  sessions              Session[]
+  passwordResets        PasswordResetToken[]
+  emailVerifications    EmailVerificationToken[]
+  markedAttendances     Attendance[]            @relation("attendances_marked_by")
+  createdAssignments    Assignment[]            @relation("assignments_created_by")
 
   @@index([email])
   @@index([phone])
@@ -133,8 +160,11 @@ model Student {
   enrolledAt      DateTime      @map("enrolled_at") @db.Date
   status          StudentStatus @default(active)
 
-  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  groups GroupStudent[]
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groups            GroupStudent[]
+  attendances       Attendance[]
+  studentAssignments StudentAssignment[]
+  studentExams      StudentExam[]
 
   @@index([studentId])
   @@map("students")
@@ -284,10 +314,12 @@ model Group {
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
-  course   Course         @relation(fields: [courseId], references: [id])
-  teacher  Teacher        @relation(fields: [teacherId], references: [id])
-  students GroupStudent[]
-  lessons  Lesson[]
+  course      Course         @relation(fields: [courseId], references: [id])
+  teacher     Teacher        @relation(fields: [teacherId], references: [id])
+  students    GroupStudent[]
+  lessons     Lesson[]
+  assignments Assignment[]
+  exams       Exam[]
 
   @@index([courseId])
   @@index([teacherId])
@@ -328,12 +360,123 @@ model Lesson {
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group       Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  attendances Attendance[]
 
   @@index([groupId])
   @@index([date])
   @@index([status])
   @@map("lessons")
+}
+
+// =====================================
+// ATTENDANCE
+// =====================================
+
+model Attendance {
+  id        String           @id @default(uuid()) @db.Uuid
+  lessonId  String           @map("lesson_id") @db.Uuid
+  studentId String           @map("student_id") @db.Uuid
+  status    AttendanceStatus
+  note      String?
+  markedAt  DateTime         @default(now()) @map("marked_at")
+  markedBy  String           @map("marked_by") @db.Uuid // user.id (admin yoki teacher)
+
+  lesson  Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  marker  User    @relation("attendances_marked_by", fields: [markedBy], references: [id])
+
+  @@unique([lessonId, studentId])
+  @@index([lessonId])
+  @@index([studentId])
+  @@map("attendances")
+}
+
+// =====================================
+// ASSIGNMENTS (vazifalar)
+// =====================================
+
+model Assignment {
+  id          String   @id @default(uuid()) @db.Uuid
+  groupId     String   @map("group_id") @db.Uuid
+  title       String
+  description String   @db.Text
+  dueDate     DateTime @map("due_date")
+  maxScore    Int      @default(100) @map("max_score")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   String   @map("created_by") @db.Uuid // user.id
+
+  group       Group               @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  creator     User                @relation("assignments_created_by", fields: [createdBy], references: [id])
+  submissions StudentAssignment[]
+
+  @@index([groupId])
+  @@index([dueDate])
+  @@map("assignments")
+}
+
+model StudentAssignment {
+  id           String           @id @default(uuid()) @db.Uuid
+  assignmentId String           @map("assignment_id") @db.Uuid
+  studentId    String           @map("student_id") @db.Uuid
+  submittedAt  DateTime?        @map("submitted_at")
+  grade        Int?
+  comment      String?          @db.Text
+  status       AssignmentStatus @default(pending)
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@index([studentId])
+  @@index([status])
+  @@map("student_assignments")
+}
+
+// =====================================
+// EXAMS (imtihonlar)
+// =====================================
+
+model Exam {
+  id              String     @id @default(uuid()) @db.Uuid
+  groupId         String     @map("group_id") @db.Uuid
+  title           String
+  date            DateTime
+  durationMinutes Int        @default(60) @map("duration_minutes")
+  questionsCount  Int        @default(0) @map("questions_count")
+  maxScore        Int        @default(100) @map("max_score")
+  status          ExamStatus @default(upcoming)
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  group   Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  results StudentExam[]
+
+  @@index([groupId])
+  @@index([date])
+  @@index([status])
+  @@map("exams")
+}
+
+model StudentExam {
+  id          String            @id @default(uuid()) @db.Uuid
+  examId      String            @map("exam_id") @db.Uuid
+  studentId   String            @map("student_id") @db.Uuid
+  grade       Int?
+  comment     String?           @db.Text
+  completedAt DateTime?         @map("completed_at")
+  status      StudentExamStatus @default(pending)
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  exam    Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, studentId])
+  @@index([studentId])
+  @@index([status])
+  @@map("student_exams")
 }
 
 model EmailVerificationToken {

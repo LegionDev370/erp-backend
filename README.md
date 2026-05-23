@@ -73,7 +73,7 @@ Adminer (DB UI): <http://localhost:8080>
 
 ---
 
-## 📡 Hozirgi endpointlar (Bosqich 1 + 2 + 3)
+## 📡 Hozirgi endpointlar (Bosqich 1 + 2 + 3 + 4)
 
 ### Public
 
@@ -146,6 +146,34 @@ Adminer (DB UI): <http://localhost:8080>
 - `POST /api/v1/admin/schedule/lessons` — yangi dars (xona vaqt konflikti avto-tekshiriladi)
 - `PATCH /api/v1/admin/schedule/lessons/:id` — yangilash (yana konflikt tekshiruvi)
 - `DELETE /api/v1/admin/schedule/lessons/:id`
+
+### Bosqich 4: Davomat va Baholar
+
+**Attendance:**
+- `GET /api/v1/admin/attendance?groupId=...&date=...` — davomat ro'yxati
+- `POST /api/v1/admin/attendance` — bulk save (upsert, bir darsga barcha talabalar uchun)
+- `PATCH /api/v1/admin/attendance/:id` — bitta yozuvni yangilash
+- `GET /api/v1/admin/groups/:id/attendance-matrix?from=...&to=...` — davomat matritsasi (talaba × dars)
+- `GET /api/v1/admin/students/:id/attendance` — talaba davomat tarixi (stats: present/late/absent)
+
+**Assignments:**
+- `GET /api/v1/admin/assignments` — vazifalar (filter: groupId)
+- `POST /api/v1/admin/assignments` — yangi vazifa (guruh active talabalariga pending submissionlar avto-yaratiladi)
+- `GET /api/v1/admin/assignments/:id` — tafsilot
+- `PATCH /api/v1/admin/assignments/:id` — yangilash
+- `DELETE /api/v1/admin/assignments/:id` — cascade
+- `GET /api/v1/admin/assignments/:id/grades` — barcha submissionlar va baholar
+- `PATCH /api/v1/admin/assignments/:id/grades/:studentId` — baho qo'yish (maxScore tekshiruvi)
+- `GET /api/v1/admin/students/:id/grades` — talaba baholar tarixi
+
+**Exams:**
+- `GET /api/v1/admin/exams` — imtihonlar (filter: groupId, status)
+- `POST /api/v1/admin/exams` — yangi imtihon (active talabalar uchun pending natijalar avto-yaratiladi)
+- `GET /api/v1/admin/exams/:id`
+- `PATCH /api/v1/admin/exams/:id`
+- `DELETE /api/v1/admin/exams/:id`
+- `GET /api/v1/admin/exams/:id/grades` — natijalar
+- `PATCH /api/v1/admin/exams/:id/grades/:studentId` — baho + status (completed/missed)
 
 ---
 
