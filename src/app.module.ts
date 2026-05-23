@@ -16,6 +16,8 @@ import { UsersModule } from './users/users.module';
 import { StudentsModule } from './students/students.module';
 import { TeachersModule } from './teachers/teachers.module';
 import { CoursesModule } from './courses/courses.module';
+import { GroupsModule } from './groups/groups.module';
+import { ScheduleModule } from './schedule/schedule.module';
 import { PublicModule } from './public/public.module';
 import { HealthController } from './health.controller';
 
@@ -58,6 +60,8 @@ import { HealthController } from './health.controller';
     StudentsModule,
     TeachersModule,
     CoursesModule,
+    GroupsModule,
+    ScheduleModule,
     PublicModule,
   ],
   controllers: [HealthController],

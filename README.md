@@ -73,7 +73,7 @@ Adminer (DB UI): <http://localhost:8080>
 
 ---
 
-## 📡 Hozirgi endpointlar (Bosqich 1 + 2)
+## 📡 Hozirgi endpointlar (Bosqich 1 + 2 + 3)
 
 ### Public
 
@@ -126,6 +126,26 @@ Adminer (DB UI): <http://localhost:8080>
 - `PATCH /api/v1/admin/courses/:id` — `modules` berilsa, eskilar replace bo'ladi
 - `DELETE /api/v1/admin/courses/:id` — cascade
 - `POST /api/v1/admin/courses/:id/image` — muqova yuklash (5 MB)
+
+### Bosqich 3: Guruhlar va Jadval
+
+**Groups:**
+- `GET /api/v1/admin/groups` — pagination + filter (courseId, teacherId, status, format, room, search)
+- `POST /api/v1/admin/groups` — yangi guruh (course+teacher mavjudligi avto-tekshiriladi)
+- `GET /api/v1/admin/groups/:id` — guruh tafsiloti (course+teacher info bilan)
+- `PATCH /api/v1/admin/groups/:id` — yangilash (maxStudents < currentStudents validatsiyasi)
+- `DELETE /api/v1/admin/groups/:id` — cascade (group_students, lessons)
+- `GET /api/v1/admin/groups/:id/students` — guruh tarkibi
+- `POST /api/v1/admin/groups/:id/students` — talaba qo'shish (currentStudents avto-increment, sig'imi tekshiriladi)
+- `DELETE /api/v1/admin/groups/:id/students/:studentId` — chiqarish (soft: status='left', leftAt)
+
+**Schedule (Lessons):**
+- `GET /api/v1/admin/schedule` — calendar grid (filter: from, to, teacherId, groupId, room, status)
+- `GET /api/v1/admin/schedule/rooms` — xonalar bandlik holati (xonalar bo'yicha guruhlangan)
+- `GET /api/v1/admin/schedule/lessons/:id` — bitta dars tafsiloti
+- `POST /api/v1/admin/schedule/lessons` — yangi dars (xona vaqt konflikti avto-tekshiriladi)
+- `PATCH /api/v1/admin/schedule/lessons/:id` — yangilash (yana konflikt tekshiruvi)
+- `DELETE /api/v1/admin/schedule/lessons/:id`
 
 ---
 

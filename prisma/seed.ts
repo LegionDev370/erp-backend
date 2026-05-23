@@ -10,7 +10,15 @@
  *   - teacher@oquv.uz      / Teacher123
  *   - student@oquv.uz      / Student123
  */
-import { CourseLevel, CourseStatus, PrismaClient, UserRole } from '@prisma/client';
+import {
+  CourseLevel,
+  CourseStatus,
+  GroupFormat,
+  GroupStatus,
+  LessonStatus,
+  PrismaClient,
+  UserRole,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -231,8 +239,79 @@ async function seedCourses() {
   }
 }
 
+// ============================================================
+// GROUPS + LESSONS
+// ============================================================
+async function seedGroups() {
+  console.log('👥 Seeding groups + lessons...');
+
+  const course = await prisma.course.findUnique({ where: { slug: 'frontend-bootcamp' } });
+  const teacher = await prisma.teacher.findFirst({ where: { teacherId: 'TC-001' } });
+  const student = await prisma.student.findFirst({ where: { studentId: 'ST-0001' } });
+
+  if (!course || !teacher || !student) {
+    console.log("  ⚠ Kurs/o'qituvchi/talaba topilmadi - skip");
+    return;
+  }
+
+  const existingGroup = await prisma.group.findUnique({ where: { name: 'Frontend-01' } });
+  if (existingGroup) {
+    console.log("  ↺ Frontend-01 (mavjud)");
+    return;
+  }
+
+  const group = await prisma.group.create({
+    data: {
+      name: 'Frontend-01',
+      courseId: course.id,
+      teacherId: teacher.id,
+      startDate: new Date('2026-09-01'),
+      endDate: new Date('2027-03-01'),
+      status: GroupStatus.active,
+      maxStudents: 20,
+      currentStudents: 0,
+      room: 'A-101',
+      format: GroupFormat.offline,
+      scheduleDays: ['mon', 'wed', 'fri'],
+      scheduleTime: '09:00',
+      monthlyPrice: 500000,
+    },
+  });
+
+  // Talabani guruhga qo'shamiz
+  await prisma.groupStudent.create({
+    data: { groupId: group.id, studentId: student.id },
+  });
+  await prisma.group.update({
+    where: { id: group.id },
+    data: { currentStudents: 1 },
+  });
+
+  // 3 ta namuna dars
+  const lessons = [
+    { date: '2026-09-07', topic: 'HTML asoslari', status: LessonStatus.scheduled },
+    { date: '2026-09-09', topic: 'CSS box-model', status: LessonStatus.scheduled },
+    { date: '2026-09-11', topic: 'Flexbox amaliyot', status: LessonStatus.scheduled },
+  ];
+  for (const l of lessons) {
+    await prisma.lesson.create({
+      data: {
+        groupId: group.id,
+        date: new Date(l.date),
+        startTime: '09:00',
+        endTime: '11:00',
+        room: 'A-101',
+        topic: l.topic,
+        status: l.status,
+      },
+    });
+  }
+  console.log(`  ✓ Frontend-01 + 1 student + 3 lessons`);
+}
+
 main()
   .then(() => seedCourses())
+  .then(() => seedGroups())
   .then(() => console.log('✅ All done.'))
   .catch((e) => {
     console.error(e);
