@@ -30,6 +30,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { AVATAR_OPTIONS, buildMulterOptions, fileToUrl } from '../common/utils/multer.config';
 import { AttendanceService } from '../attendance/attendance.service';
 import { AssignmentsService } from '../assignments/assignments.service';
+import { PaymentsService } from '../payments/payments.service';
 
 @ApiTags('Admin · Students')
 @ApiBearerAuth('access-token')
@@ -40,6 +41,7 @@ export class StudentsController {
     private readonly studentsService: StudentsService,
     private readonly attendanceService: AttendanceService,
     private readonly assignmentsService: AssignmentsService,
+    private readonly paymentsService: PaymentsService,
   ) {}
 
   @Get()
@@ -87,6 +89,12 @@ export class StudentsController {
   @ApiOperation({ summary: "Talaba baholar tarixi (vazifalar)" })
   gradesHistory(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.assignmentsService.studentGrades(id);
+  }
+
+  @Get(':id/payments')
+  @ApiOperation({ summary: "Talaba to'lov tarixi (totalPaid + totalPending bilan)" })
+  paymentsHistory(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.paymentsService.studentHistory(id);
   }
 
   @Post(':id/avatar')

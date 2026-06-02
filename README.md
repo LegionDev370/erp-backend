@@ -73,7 +73,7 @@ Adminer (DB UI): <http://localhost:8080>
 
 ---
 
-## 📡 Hozirgi endpointlar (Bosqich 1 + 2 + 3 + 4)
+## 📡 Hozirgi endpointlar (Bosqich 1 + 2 + 3 + 4 + 5)
 
 ### Public
 
@@ -174,6 +174,28 @@ Adminer (DB UI): <http://localhost:8080>
 - `DELETE /api/v1/admin/exams/:id`
 - `GET /api/v1/admin/exams/:id/grades` — natijalar
 - `PATCH /api/v1/admin/exams/:id/grades/:studentId` — baho + status (completed/missed)
+
+### Bosqich 5: Moliya
+
+**Payments:**
+- `GET /api/v1/admin/payments` — pagination + filter (studentId, groupId, status, method, year+month)
+- `POST /api/v1/admin/payments` — to'lov qabul qilish
+- `GET /api/v1/admin/payments/:id`
+- `PATCH /api/v1/admin/payments/:id/status` — holatni o'zgartirish (paid bo'lsa paidAt avto-set)
+- `POST /api/v1/admin/payments/:id/refund` — paid/partial to'lovni qaytarish
+- `GET /api/v1/admin/payments/:id/receipt` — **PDF kvitansiya yuklab olish** (pdfkit)
+- `GET /api/v1/admin/students/:id/payments` — talaba to'lov tarixi (totalPaid/totalPending bilan)
+
+**Finance:**
+- `GET /api/v1/admin/finance/kpis?year=...` — 4 KPI (daromad, xarajat, foyda, foyda%)
+- `GET /api/v1/admin/finance/revenue-vs-expense?year=...` — line chart (12 oy)
+- `GET /api/v1/admin/finance/expense-categories?year=...` — pie chart (kategoriya bo'yicha)
+- `GET /api/v1/admin/finance/categories` — xarajat kategoriyalari
+- `POST /api/v1/admin/finance/categories` — yangi kategoriya
+- `GET /api/v1/admin/finance/expenses` — xarajatlar (filter: categoryId, year/month, from/to)
+- `POST /api/v1/admin/finance/expenses` — yangi xarajat
+- `PATCH /api/v1/admin/finance/expenses/:id`
+- `DELETE /api/v1/admin/finance/expenses/:id`
 
 ---
 

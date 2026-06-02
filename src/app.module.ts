@@ -21,6 +21,8 @@ import { ScheduleModule } from './schedule/schedule.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { ExamsModule } from './exams/exams.module';
+import { PaymentsModule } from './payments/payments.module';
+import { FinanceModule } from './finance/finance.module';
 import { PublicModule } from './public/public.module';
 import { HealthController } from './health.controller';
 
@@ -68,6 +70,8 @@ import { HealthController } from './health.controller';
     AttendanceModule,
     AssignmentsModule,
     ExamsModule,
+    PaymentsModule,
+    FinanceModule,
     PublicModule,
   ],
   controllers: [HealthController],
