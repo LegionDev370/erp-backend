@@ -13,7 +13,8 @@
       "Bash(DATABASE_URL='postgresql://postgres:postgres@localhost:5432/oquv_markaz?schema=public' npx prisma migrate dev --name init)",
       "Bash(docker exec *)",
       "Bash(node -e \"console.log\\(JSON.stringify\\(process.env.DATABASE_URL\\)\\)\")",
-      "Bash(node -e \"require\\('dotenv'\\).config\\(\\); console.log\\(JSON.stringify\\(process.env.DATABASE_URL\\)\\)\")"
+      "Bash(node -e \"require\\('dotenv'\\).config\\(\\); console.log\\(JSON.stringify\\(process.env.DATABASE_URL\\)\\)\")",
+      "PowerShell($dd = \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\"; if \\(Test-Path $dd\\) { Start-Process $dd; \"Docker Desktop ishga tushirilyapti...\" } else { \"Docker Desktop topilmadi: $dd\" })"
     ]
   }
 }

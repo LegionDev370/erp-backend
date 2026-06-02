@@ -10,7 +10,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - '5433:5432'   # 5433 → kompyuterda allaqachon native Postgres 5432'da ishlamoqda
+      - '5433:5432' # 5433 → kompyuterda allaqachon native Postgres 5432'da ishlamoqda
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres -d oquv_markaz']
       interval: 5s
@@ -38,24 +38,23 @@ services:
     depends_on:
       - postgres
 
-  # NestJS ilovasi (ixtiyoriy — odatda dev'da lokal "npm run start:dev" ishlatiladi)
-  # app:
-  #   build: .
-  #   container_name: oquv_app
-  #   restart: unless-stopped
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #   environment:
-  #     NODE_ENV: production
-  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/oquv_markaz?schema=public
-  #     REDIS_URL: redis://redis:6379
-  #   env_file:
-  #     - .env
-  #   ports:
-  #     - '3000:3000'
+  app:
+    build: .
+    container_name: oquv_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/oquv_markaz?schema=public
+      REDIS_URL: redis://redis:6379
+    env_file:
+      - .env
+    ports:
+      - '3000:3000'
 
 volumes:
   pgdata:
