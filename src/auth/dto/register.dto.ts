@@ -21,7 +21,7 @@ export class RegisterDto {
 
   @ApiProperty({
     example: 'Strong123',
-    description: "Min 8 belgi, kamida 1 katta harf, 1 raqam",
+    description: 'Min 8 belgi, kamida 1 katta harf, 1 raqam',
   })
   @IsString()
   @MinLength(8, { message: "Parol kamida 8 belgidan iborat bo'lishi kerak" })
@@ -40,7 +40,7 @@ export class RegisterDto {
   @MinLength(2)
   lastName!: string;
 
-  @ApiPropertyOptional({ example: 'Akmaljon o\'g\'li' })
+  @ApiPropertyOptional({ example: "Akmaljon o'g'li" })
   @IsOptional()
   @IsString()
   middleName?: string;
