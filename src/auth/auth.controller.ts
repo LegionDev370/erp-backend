@@ -9,7 +9,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 
 import { AuthService } from './auth.service';
@@ -42,7 +41,6 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 15 * 60 * 1000 } })
   @ApiOperation({ summary: 'Email/telefon va parol orqali kirish' })
   @ApiResponse({ status: 200, type: AuthResponseDto })
   login(@Body() dto: LoginDto, @Req() req: Request): Promise<AuthResponseDto> {
@@ -73,7 +71,6 @@ export class AuthController {
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 3, ttl: 60 * 60 * 1000 } })
   @ApiOperation({ summary: 'Parolni tiklash uchun email yuborish' })
   forgotPassword(@Body() dto: ForgotPasswordDto): Promise<{ message: string }> {
     return this.authService.forgotPassword(dto.email);

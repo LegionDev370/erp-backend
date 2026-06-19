@@ -10,7 +10,7 @@ NestJS + PostgreSQL + Prisma asosida qurilgan o'quv markazni boshqarish tizimi u
 - **Passport-JWT** + **bcrypt** (12 round)
 - **class-validator** / **class-transformer** validation
 - **Swagger** (`/api/docs`)
-- **Helmet** + **Throttler** xavfsizlik
+- **Helmet** xavfsizlik
 - **Pino** logger (production-grade, sensitive data redaction bilan)
 
 ---
@@ -263,7 +263,6 @@ prisma/
 
 - **Global JwtAuthGuard** — `@Public()` bilan ochiq endpointlar
 - **Global RolesGuard** — `@Roles('admin', 'super_admin')` bilan rolga asoslangan
-- **Throttler** — global limit + login uchun 5 urinish / 15 daqiqa
 - **bcrypt 12 round** — parol hash
 - **Refresh token rotation** — har refresh'da eski sessiya o'chadi
 - **Parol o'zgartirilganda** barcha sessiyalar tugatiladi
