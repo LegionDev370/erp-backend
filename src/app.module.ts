@@ -45,13 +45,6 @@ import { HealthController } from './health.controller';
       },
     }),
 
-    ThrottlerModule.forRoot([
-      {
-        ttl: Number(process.env.THROTTLE_TTL ?? 60) * 1000,
-        limit: Number(process.env.THROTTLE_LIMIT ?? 100),
-      },
-    ]),
-
     // /uploads/* — avatar va boshqa yuklangan fayllarni xizmat qilish
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), process.env.UPLOAD_DIR ?? './uploads'),
