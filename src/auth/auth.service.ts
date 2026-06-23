@@ -72,9 +72,6 @@ export class AuthService {
         data: {
           userId: created.id,
           studentId,
-          parentFirstName: '',
-          parentLastName: '',
-          parentPhone: '',
           enrolledAt: new Date(),
         },
       });

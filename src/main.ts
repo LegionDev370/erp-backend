@@ -56,7 +56,22 @@ async function bootstrap() {
     )
     .addTag('Auth', 'Ro\'yxatdan o\'tish, kirish va sessiyalar')
     .addTag('Users', 'Foydalanuvchilar')
-    .addTag('Public', 'Auth talab qilmaydigan endpointlar')
+    .addTag('Public', 'Auth talab qilmaydigan endpointlar (katalog, instructorlar)')
+    .addTag('Public · Blog', 'Blog maqolalari va izohlar')
+    .addTag('Public · Contact', 'Aloqa formasi')
+    .addTag('Student · Enrollments', 'Kurs sotib olish va mening kurslarim')
+    .addTag('Student · Progress', 'Dars progressi')
+    .addTag('Student · Certificates', 'Sertifikatlar')
+    .addTag('Student · Reviews', 'Kurs sharhlari')
+    .addTag('Admin · Courses', 'Kurs konstruktori (CRUD)')
+    .addTag('Admin · Students', 'O\'quvchilar')
+    .addTag('Admin · Instructors', 'O\'qituvchilar')
+    .addTag('Admin · Payments', 'To\'lovlar')
+    .addTag('Admin · Enrollments', 'Yozilishlar')
+    .addTag('Admin · Certificates', 'Sertifikatlar')
+    .addTag('Admin · Reviews', 'Sharhlar moderatsiyasi')
+    .addTag('Admin · Blog', 'Blog boshqaruvi va izoh moderatsiyasi')
+    .addTag('Admin · Contact', 'Murojaatlar')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

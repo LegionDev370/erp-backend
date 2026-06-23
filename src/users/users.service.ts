@@ -14,7 +14,7 @@ export class UsersService {
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: { student: true, teacher: true },
+      include: { student: true, instructor: true },
     });
     if (!user || user.deletedAt) throw new NotFoundException("Foydalanuvchi topilmadi");
     // Parolni qaytarmaymiz

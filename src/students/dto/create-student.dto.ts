@@ -11,7 +11,6 @@ import {
 import { Gender, StudentStatus } from '@prisma/client';
 
 export class CreateStudentDto {
-  // ===== USER ma'lumotlari =====
   @ApiProperty({ example: 'student2@example.com' })
   @IsEmail()
   email!: string;
@@ -58,30 +57,7 @@ export class CreateStudentDto {
   @IsString()
   address?: string;
 
-  // ===== STUDENT ma'lumotlari =====
-  @ApiProperty({ example: 'Valijon' })
-  @IsString()
-  parentFirstName!: string;
-
-  @ApiProperty({ example: 'Karimov' })
-  @IsString()
-  parentLastName!: string;
-
-  @ApiProperty({ example: '+998901112255' })
-  @Matches(/^\+998\d{9}$/)
-  parentPhone!: string;
-
-  @ApiPropertyOptional({ example: 'Dilnoza Karimova' })
-  @IsOptional()
-  @IsString()
-  motherName?: string;
-
-  @ApiPropertyOptional({ example: '+998901112277' })
-  @IsOptional()
-  @Matches(/^\+998\d{9}$/)
-  motherPhone?: string;
-
-  @ApiPropertyOptional({ example: '2026-09-01', description: "Ro'yxatga olingan sana" })
+  @ApiPropertyOptional({ example: '2026-09-01', description: "Platformaga ro'yxatdan o'tgan sana" })
   @IsOptional()
   @IsDateString()
   enrolledAt?: string;

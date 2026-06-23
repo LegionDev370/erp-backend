@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  IsUUID,
   Matches,
   Min,
   MinLength,
@@ -20,6 +21,18 @@ export class CreateCourseLessonDto {
   @ApiProperty() @IsString() @MinLength(1) title!: string;
   @ApiProperty({ example: 90 }) @IsInt() @Min(0) durationMinutes!: number;
   @ApiProperty({ example: 1 }) @IsInt() @Min(0) order!: number;
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/lesson-1.mp4' })
+  @IsOptional() @IsString()
+  videoUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Dars matni / tavsifi' })
+  @IsOptional() @IsString()
+  content?: string;
+
+  @ApiPropertyOptional({ default: false, description: 'Bepul ko\'rsa bo\'ladigan dars' })
+  @IsOptional() @IsBoolean()
+  isPreview?: boolean;
 }
 
 export class CreateCourseModuleDto {
@@ -79,6 +92,14 @@ export class CreateCourseDto {
   @ApiPropertyOptional({ example: '/uploads/courses/abc.jpg' })
   @IsOptional() @IsString()
   imageUrl?: string;
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/preview.mp4', description: 'Kurs intro videosi' })
+  @IsOptional() @IsString()
+  previewVideoUrl?: string;
+
+  @ApiPropertyOptional({ description: "O'qituvchi (instructor) ID" })
+  @IsOptional() @IsUUID()
+  instructorId?: string;
 
   @ApiPropertyOptional({ default: false })
   @IsOptional() @IsBoolean()

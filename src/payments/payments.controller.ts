@@ -29,7 +29,7 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Get()
-  @ApiOperation({ summary: "To'lovlar (filter: studentId, groupId, status, method, year+month)" })
+  @ApiOperation({ summary: "To'lovlar (filter: studentId, courseId, status, method, year+month)" })
   list(@Query() q: QueryPaymentsDto) {
     return this.paymentsService.list(q);
   }

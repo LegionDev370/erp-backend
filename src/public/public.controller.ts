@@ -25,23 +25,30 @@ export class PublicController {
     return this.publicService.courseBySlug(slug);
   }
 
-  // ===== TEACHERS =====
-  @Get('teachers')
-  @ApiOperation({ summary: 'Faol o\'qituvchilar ro\'yxati' })
-  listTeachers(@Query() q: PaginationDto) {
-    return this.publicService.listTeachers(q);
+  // ===== INSTRUCTORS =====
+  @Get('instructors')
+  @ApiOperation({ summary: "Faol o'qituvchilar ro'yxati" })
+  listInstructors(@Query() q: PaginationDto) {
+    return this.publicService.listInstructors(q);
   }
 
-  @Get('teachers/:id')
-  @ApiOperation({ summary: 'O\'qituvchi profili (ommaviy)' })
-  teacherById(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.publicService.teacherById(id);
+  @Get('instructors/:id')
+  @ApiOperation({ summary: "O'qituvchi profili (kurslari bilan)" })
+  instructorById(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.publicService.instructorById(id);
   }
 
   // ===== STATS =====
   @Get('stats')
-  @ApiOperation({ summary: 'Landing sahifa uchun statistika' })
+  @ApiOperation({ summary: 'Landing statistikasi (students, graduates, instructors, courses, certificates)' })
   stats() {
     return this.publicService.stats();
+  }
+
+  // ===== TESTIMONIALS =====
+  @Get('testimonials')
+  @ApiOperation({ summary: 'Talabalar fikri (barcha tasdiqlangan sharhlar)' })
+  testimonials(@Query('limit') limit?: string) {
+    return this.publicService.testimonials(limit ? parseInt(limit, 10) : 9);
   }
 }

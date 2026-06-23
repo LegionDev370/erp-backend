@@ -13,10 +13,7 @@ interface ReceiptData {
     studentId: string;
     phone: string;
   };
-  group: {
-    name: string;
-    courseName: string;
-  };
+  courseName: string;
   transactionId?: string | null;
   notes?: string | null;
 }
@@ -65,10 +62,9 @@ export class ReceiptGenerator {
     this.row(doc, 'Telefon:', data.student.phone);
     doc.moveDown(0.5);
 
-    // Group
-    this.sectionTitle(doc, 'Guruh');
-    this.row(doc, 'Guruh:', data.group.name);
-    this.row(doc, 'Kurs:', data.group.courseName);
+    // Course
+    this.sectionTitle(doc, 'Kurs');
+    this.row(doc, 'Kurs:', data.courseName);
     doc.moveDown(0.5);
 
     // Payment

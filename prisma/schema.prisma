@@ -1,5 +1,7 @@
 // =====================================
-// Prisma Schema — O'quv Markaz Backend
+// Prisma Schema — O'quv Markaz Online LMS Backend
+// Online ta'lim platformasi: kurslar, video darslar, enrollment,
+// progress, sertifikatlar, sharhlar va online to'lovlar.
 // =====================================
 
 generator client {
@@ -19,7 +21,7 @@ datasource db {
 enum UserRole {
   super_admin
   admin
-  teacher
+  instructor
   student
 }
 
@@ -40,9 +42,8 @@ enum StudentStatus {
   graduated
 }
 
-enum TeacherStatus {
+enum InstructorStatus {
   active
-  on_leave
   inactive
 }
 
@@ -58,70 +59,53 @@ enum CourseStatus {
   archived
 }
 
-enum GroupStatus {
-  upcoming
+enum EnrollmentStatus {
   active
   completed
+  refunded
   cancelled
-}
-
-enum GroupFormat {
-  offline
-  online
-  hybrid
-}
-
-enum GroupStudentStatus {
-  active
-  left
-  completed
-}
-
-enum LessonStatus {
-  scheduled
-  completed
-  cancelled
-}
-
-enum AttendanceStatus {
-  present
-  late
-  absent
-}
-
-enum AssignmentStatus {
-  pending
-  submitted
-  graded
-}
-
-enum ExamStatus {
-  upcoming
-  active
-  completed
-  cancelled
-}
-
-enum StudentExamStatus {
-  pending
-  completed
-  missed
 }
 
 enum PaymentMethod {
   payme
   click
-  cash
   card
-  bank
 }
 
 enum PaymentStatus {
   pending
   paid
-  partial
   refunded
   failed
+}
+
+enum ReviewStatus {
+  pending
+  approved
+  rejected
+}
+
+enum CertificateStatus {
+  issued
+  revoked
+}
+
+enum BlogStatus {
+  draft
+  published
+  archived
+}
+
+enum CommentStatus {
+  pending
+  approved
+  rejected
+}
+
+enum ContactStatus {
+  new
+  read
+  replied
 }
 
 // =====================================
@@ -150,14 +134,12 @@ model User {
   deletedAt       DateTime?  @map("deleted_at")
 
   // Relations
-  student               Student?
-  teacher               Teacher?
-  sessions              Session[]
-  passwordResets        PasswordResetToken[]
-  emailVerifications    EmailVerificationToken[]
-  markedAttendances     Attendance[]            @relation("attendances_marked_by")
-  createdAssignments    Assignment[]            @relation("assignments_created_by")
-  createdExpenses       Expense[]               @relation("expenses_created_by")
+  student            Student?
+  instructor         Instructor?
+  sessions           Session[]
+  passwordResets     PasswordResetToken[]
+  emailVerifications EmailVerificationToken[]
+  blogPosts          BlogPost[]               @relation("blog_author")
 
   @@index([email])
   @@index([phone])
@@ -167,50 +149,45 @@ model User {
 }
 
 model Student {
-  id              String        @id @default(uuid()) @db.Uuid
-  userId          String        @unique @map("user_id") @db.Uuid
-  studentId       String        @unique @map("student_id") // ST-0123
-  parentFirstName String        @map("parent_first_name")
-  parentLastName  String        @map("parent_last_name")
-  parentPhone     String        @map("parent_phone")
-  motherName      String?       @map("mother_name")
-  motherPhone     String?       @map("mother_phone")
-  enrolledAt      DateTime      @map("enrolled_at") @db.Date
-  status          StudentStatus @default(active)
+  id         String        @id @default(uuid()) @db.Uuid
+  userId     String        @unique @map("user_id") @db.Uuid
+  studentId  String        @unique @map("student_id") // ST-0123
+  enrolledAt DateTime      @default(now()) @map("enrolled_at") // platformaga ro'yxatdan o'tgan sana
+  status     StudentStatus @default(active)
 
-  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  groups             GroupStudent[]
-  attendances        Attendance[]
-  studentAssignments StudentAssignment[]
-  studentExams       StudentExam[]
-  payments           Payment[]
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments  Enrollment[]
+  progress     LessonProgress[]
+  certificates Certificate[]
+  reviews      Review[]
+  payments     Payment[]
 
   @@index([studentId])
   @@map("students")
 }
 
-model Teacher {
-  id          String        @id @default(uuid()) @db.Uuid
-  userId      String        @unique @map("user_id") @db.Uuid
-  teacherId   String        @unique @map("teacher_id") // TC-001
-  specialty   String
-  experience  Int           @default(0)
-  bio         String?
-  hireDate    DateTime      @map("hire_date") @db.Date
-  salary      Decimal       @default(0) @db.Decimal(15, 2)
-  rating      Decimal       @default(0) @db.Decimal(3, 2)
-  socialLinks Json?         @map("social_links") // {github, linkedin, telegram}
-  status      TeacherStatus @default(active)
+// O'qituvchi = kurs muallifi (online instructor)
+model Instructor {
+  id           String           @id @default(uuid()) @db.Uuid
+  userId       String           @unique @map("user_id") @db.Uuid
+  instructorId String           @unique @map("instructor_id") // IN-001
+  specialty    String // "JavaScript / Frontend"
+  experience   Int              @default(0) // yillar
+  bio          String?
+  rating       Decimal          @default(0) @db.Decimal(3, 2)
+  socialLinks  Json?            @map("social_links") // {github, linkedin, telegram}
+  status       InstructorStatus @default(active)
+  createdAt    DateTime         @default(now()) @map("created_at")
 
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  groups Group[]
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courses Course[]
 
-  @@index([teacherId])
-  @@map("teachers")
+  @@index([instructorId])
+  @@map("instructors")
 }
 
 // =====================================
-// SESSIONS (refresh tokens)
+// SESSIONS + AUTH TOKENS
 // =====================================
 
 model Session {
@@ -232,17 +209,13 @@ model Session {
   @@map("sessions")
 }
 
-// =====================================
-// AUTH TOKENS (forgot password, email verify)
-// =====================================
-
 model PasswordResetToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  token     String   @unique
-  expiresAt DateTime @map("expires_at")
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
   usedAt    DateTime? @map("used_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -251,8 +224,23 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
+model EmailVerificationToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("email_verification_tokens")
+}
+
 // =====================================
-// COURSES
+// COURSES (online kurslar)
 // =====================================
 
 model Course {
@@ -267,21 +255,29 @@ model Course {
   oldPrice        Decimal?     @map("old_price") @db.Decimal(15, 2)
   durationMonths  Int          @default(1) @map("duration_months")
   lessonsCount    Int          @default(0) @map("lessons_count")
+  studentsCount   Int          @default(0) @map("students_count") // cached enrollment soni
   imageUrl        String?      @map("image_url")
+  previewVideoUrl String?      @map("preview_video_url")
   isFeatured      Boolean      @default(false) @map("is_featured")
   rating          Decimal      @default(0) @db.Decimal(3, 2)
   ratingCount     Int          @default(0) @map("rating_count")
   status          CourseStatus @default(draft)
+  instructorId    String?      @map("instructor_id") @db.Uuid
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
 
-  modules CourseModule[]
-  groups  Group[]
+  instructor   Instructor?   @relation(fields: [instructorId], references: [id], onDelete: SetNull)
+  modules      CourseModule[]
+  enrollments  Enrollment[]
+  reviews      Review[]
+  certificates Certificate[]
+  payments     Payment[]
 
   @@index([slug])
   @@index([category])
   @@index([status])
   @@index([isFeatured])
+  @@index([instructorId])
   @@map("courses")
 }
 
@@ -299,279 +295,216 @@ model CourseModule {
 }
 
 model CourseLesson {
-  id              String @id @default(uuid()) @db.Uuid
-  moduleId        String @map("module_id") @db.Uuid
+  id              String  @id @default(uuid()) @db.Uuid
+  moduleId        String  @map("module_id") @db.Uuid
   title           String
-  durationMinutes Int    @default(0) @map("duration_minutes")
-  order           Int    @default(0)
+  durationMinutes Int     @default(0) @map("duration_minutes")
+  order           Int     @default(0)
+  videoUrl        String? @map("video_url")
+  content         String? @db.Text // dars matni / tavsifi
+  isPreview       Boolean @default(false) @map("is_preview") // bepul ko'rish mumkin
 
-  module CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module   CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
 
   @@index([moduleId])
   @@map("course_lessons")
 }
 
 // =====================================
-// GROUPS
+// ENROLLMENT (talaba kursga yozilgan / sotib olgan)
 // =====================================
 
-model Group {
-  id              String      @id @default(uuid()) @db.Uuid
-  name            String      @unique // "Frontend-01"
-  courseId        String      @map("course_id") @db.Uuid
-  teacherId       String      @map("teacher_id") @db.Uuid
-  startDate       DateTime    @map("start_date") @db.Date
-  endDate         DateTime?   @map("end_date") @db.Date
-  status          GroupStatus @default(upcoming)
-  maxStudents     Int         @default(20) @map("max_students")
-  currentStudents Int         @default(0) @map("current_students")
-  room            String?
-  format          GroupFormat @default(offline)
-  scheduleDays    Json        @map("schedule_days") // ["mon", "wed", "fri"]
-  scheduleTime    String      @map("schedule_time") // "09:00"
-  monthlyPrice    Decimal     @default(0) @map("monthly_price") @db.Decimal(15, 2)
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
+model Enrollment {
+  id          String           @id @default(uuid()) @db.Uuid
+  studentId   String           @map("student_id") @db.Uuid
+  courseId    String           @map("course_id") @db.Uuid
+  status      EnrollmentStatus @default(active)
+  progress    Int              @default(0) // 0-100 cached %
+  enrolledAt  DateTime         @default(now()) @map("enrolled_at")
+  completedAt DateTime?        @map("completed_at")
+  lastViewedLessonId String?   @map("last_viewed_lesson_id") @db.Uuid
 
-  course      Course         @relation(fields: [courseId], references: [id])
-  teacher     Teacher        @relation(fields: [teacherId], references: [id])
-  students    GroupStudent[]
-  lessons     Lesson[]
-  assignments Assignment[]
-  exams       Exam[]
-  payments    Payment[]
-
-  @@index([courseId])
-  @@index([teacherId])
-  @@index([status])
-  @@map("groups")
-}
-
-model GroupStudent {
-  groupId    String             @map("group_id") @db.Uuid
-  studentId  String             @map("student_id") @db.Uuid
-  enrolledAt DateTime           @default(now()) @map("enrolled_at")
-  leftAt     DateTime?          @map("left_at")
-  status     GroupStudentStatus @default(active)
-
-  group   Group   @relation(fields: [groupId], references: [id], onDelete: Cascade)
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  @@id([groupId, studentId])
+  @@unique([studentId, courseId])
   @@index([studentId])
+  @@index([courseId])
   @@index([status])
-  @@map("group_students")
+  @@map("enrollments")
 }
 
 // =====================================
-// LESSONS (jadval — calendar uchun)
+// LESSON PROGRESS (har bir dars bo'yicha talaba holati)
 // =====================================
 
-model Lesson {
+model LessonProgress {
+  id             String    @id @default(uuid()) @db.Uuid
+  studentId      String    @map("student_id") @db.Uuid
+  lessonId       String    @map("lesson_id") @db.Uuid
+  completed      Boolean   @default(false)
+  watchedSeconds Int       @default(0) @map("watched_seconds")
+  completedAt    DateTime? @map("completed_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  student Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson  CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+  @@index([studentId])
+  @@index([lessonId])
+  @@map("lesson_progress")
+}
+
+// =====================================
+// CERTIFICATES (kurs tugatilganda)
+// =====================================
+
+model Certificate {
+  id        String            @id @default(uuid()) @db.Uuid
+  studentId String            @map("student_id") @db.Uuid
+  courseId  String            @map("course_id") @db.Uuid
+  serialNo  String            @unique @map("serial_no") // CERT-2026-0001
+  status    CertificateStatus @default(issued)
+  url       String? // PDF havola
+  issuedAt  DateTime          @default(now()) @map("issued_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+  @@map("certificates")
+}
+
+// =====================================
+// REVIEWS (kurs sharhlari)
+// =====================================
+
+model Review {
   id        String       @id @default(uuid()) @db.Uuid
-  groupId   String       @map("group_id") @db.Uuid
-  date      DateTime     @db.Date
-  startTime String       @map("start_time") // "09:00"
-  endTime   String       @map("end_time") // "11:00"
-  room      String?
-  topic     String
-  status    LessonStatus @default(scheduled)
-  notes     String?      @db.Text
+  courseId  String       @map("course_id") @db.Uuid
+  studentId String       @map("student_id") @db.Uuid
+  rating    Int // 1-5
+  text      String?      @db.Text
+  status    ReviewStatus @default(pending)
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 
-  group       Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  attendances Attendance[]
-
-  @@index([groupId])
-  @@index([date])
-  @@index([status])
-  @@map("lessons")
-}
-
-// =====================================
-// ATTENDANCE
-// =====================================
-
-model Attendance {
-  id        String           @id @default(uuid()) @db.Uuid
-  lessonId  String           @map("lesson_id") @db.Uuid
-  studentId String           @map("student_id") @db.Uuid
-  status    AttendanceStatus
-  note      String?
-  markedAt  DateTime         @default(now()) @map("marked_at")
-  markedBy  String           @map("marked_by") @db.Uuid // user.id (admin yoki teacher)
-
-  lesson  Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  marker  User    @relation("attendances_marked_by", fields: [markedBy], references: [id])
-
-  @@unique([lessonId, studentId])
-  @@index([lessonId])
-  @@index([studentId])
-  @@map("attendances")
-}
-
-// =====================================
-// ASSIGNMENTS (vazifalar)
-// =====================================
-
-model Assignment {
-  id          String   @id @default(uuid()) @db.Uuid
-  groupId     String   @map("group_id") @db.Uuid
-  title       String
-  description String   @db.Text
-  dueDate     DateTime @map("due_date")
-  maxScore    Int      @default(100) @map("max_score")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  createdBy   String   @map("created_by") @db.Uuid // user.id
-
-  group       Group               @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  creator     User                @relation("assignments_created_by", fields: [createdBy], references: [id])
-  submissions StudentAssignment[]
-
-  @@index([groupId])
-  @@index([dueDate])
-  @@map("assignments")
-}
-
-model StudentAssignment {
-  id           String           @id @default(uuid()) @db.Uuid
-  assignmentId String           @map("assignment_id") @db.Uuid
-  studentId    String           @map("student_id") @db.Uuid
-  submittedAt  DateTime?        @map("submitted_at")
-  grade        Int?
-  comment      String?          @db.Text
-  status       AssignmentStatus @default(pending)
-  updatedAt    DateTime         @updatedAt @map("updated_at")
-
-  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@unique([assignmentId, studentId])
-  @@index([studentId])
-  @@index([status])
-  @@map("student_assignments")
-}
-
-// =====================================
-// EXAMS (imtihonlar)
-// =====================================
-
-model Exam {
-  id              String     @id @default(uuid()) @db.Uuid
-  groupId         String     @map("group_id") @db.Uuid
-  title           String
-  date            DateTime
-  durationMinutes Int        @default(60) @map("duration_minutes")
-  questionsCount  Int        @default(0) @map("questions_count")
-  maxScore        Int        @default(100) @map("max_score")
-  status          ExamStatus @default(upcoming)
-  createdAt       DateTime   @default(now()) @map("created_at")
-  updatedAt       DateTime   @updatedAt @map("updated_at")
-
-  group   Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  results StudentExam[]
-
-  @@index([groupId])
-  @@index([date])
-  @@index([status])
-  @@map("exams")
-}
-
-model StudentExam {
-  id          String            @id @default(uuid()) @db.Uuid
-  examId      String            @map("exam_id") @db.Uuid
-  studentId   String            @map("student_id") @db.Uuid
-  grade       Int?
-  comment     String?           @db.Text
-  completedAt DateTime?         @map("completed_at")
-  status      StudentExamStatus @default(pending)
-  updatedAt   DateTime          @updatedAt @map("updated_at")
-
-  exam    Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  @@unique([examId, studentId])
+  @@unique([courseId, studentId])
+  @@index([courseId])
   @@index([studentId])
   @@index([status])
-  @@map("student_exams")
+  @@map("reviews")
 }
 
 // =====================================
-// PAYMENTS (talabalar to'lovi)
+// PAYMENTS (online kurs xaridi)
 // =====================================
 
 model Payment {
   id            String        @id @default(uuid()) @db.Uuid
   studentId     String        @map("student_id") @db.Uuid
-  groupId       String        @map("group_id") @db.Uuid
+  courseId      String        @map("course_id") @db.Uuid
   amount        Decimal       @db.Decimal(15, 2)
   method        PaymentMethod
   status        PaymentStatus @default(pending)
   paidAt        DateTime?     @map("paid_at")
-  dueDate       DateTime      @map("due_date") @db.Date
-  transactionId String?       @map("transaction_id") // to'lov tizimi ID
+  transactionId String?       @map("transaction_id")
   receiptUrl    String?       @map("receipt_url")
   notes         String?       @db.Text
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  group   Group   @relation(fields: [groupId], references: [id])
+  course  Course  @relation(fields: [courseId], references: [id])
 
   @@index([studentId])
-  @@index([groupId])
+  @@index([courseId])
   @@index([status])
-  @@index([dueDate])
   @@index([paidAt])
   @@map("payments")
 }
 
 // =====================================
-// EXPENSES (markazning xarajatlari)
+// BLOG (public kontent)
 // =====================================
 
-model ExpenseCategory {
-  id       String    @id @default(uuid()) @db.Uuid
-  name     String    @unique // "Ish haqi", "Ijara", "Marketing"
-  color    String    @default("#2563EB") // hex
-  expenses Expense[]
+model BlogCategory {
+  id    String     @id @default(uuid()) @db.Uuid
+  name  String
+  slug  String     @unique
+  posts BlogPost[]
 
-  @@map("expense_categories")
+  @@map("blog_categories")
 }
 
-model Expense {
-  id            String   @id @default(uuid()) @db.Uuid
-  categoryId    String   @map("category_id") @db.Uuid
-  description   String
-  amount        Decimal  @db.Decimal(15, 2)
-  date          DateTime @db.Date
-  createdBy     String   @map("created_by") @db.Uuid // user.id
-  attachmentUrl String?  @map("attachment_url")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+model BlogPost {
+  id          String     @id @default(uuid()) @db.Uuid
+  title       String
+  slug        String     @unique
+  excerpt     String     @db.Text
+  content     String     @db.Text
+  imageUrl    String?    @map("image_url")
+  authorId    String?    @map("author_id") @db.Uuid
+  categoryId  String?    @map("category_id") @db.Uuid
+  viewsCount  Int        @default(0) @map("views_count")
+  readMinutes Int        @default(5) @map("read_minutes")
+  isFeatured  Boolean    @default(false) @map("is_featured")
+  status      BlogStatus @default(draft)
+  publishedAt DateTime?  @map("published_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
 
-  category ExpenseCategory @relation(fields: [categoryId], references: [id])
-  creator  User            @relation("expenses_created_by", fields: [createdBy], references: [id])
+  author   User?         @relation("blog_author", fields: [authorId], references: [id], onDelete: SetNull)
+  category BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  comments BlogComment[]
 
+  @@index([slug])
+  @@index([status])
   @@index([categoryId])
-  @@index([date])
-  @@map("expenses")
+  @@index([isFeatured])
+  @@map("blog_posts")
 }
 
-model EmailVerificationToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  token     String   @unique
-  expiresAt DateTime @map("expires_at")
-  usedAt    DateTime? @map("used_at")
-  createdAt DateTime @default(now()) @map("created_at")
+model BlogComment {
+  id          String        @id @default(uuid()) @db.Uuid
+  postId      String        @map("post_id") @db.Uuid
+  parentId    String?       @map("parent_id") @db.Uuid
+  authorName  String        @map("author_name")
+  authorEmail String        @map("author_email")
+  text        String        @db.Text
+  status      CommentStatus @default(pending)
+  createdAt   DateTime      @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parent  BlogComment?  @relation("comment_thread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies BlogComment[] @relation("comment_thread")
 
-  @@index([token])
-  @@index([userId])
-  @@map("email_verification_tokens")
+  @@index([postId])
+  @@index([status])
+  @@map("blog_comments")
+}
+
+// =====================================
+// CONTACT (aloqa formasi)
+// =====================================
+
+model ContactMessage {
+  id        String        @id @default(uuid()) @db.Uuid
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String        @db.Text
+  status    ContactStatus @default(new)
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@index([status])
+  @@map("contact_messages")
 }

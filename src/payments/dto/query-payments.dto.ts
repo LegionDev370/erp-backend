@@ -11,7 +11,7 @@ export class QueryPaymentsDto extends PaginationDto {
 
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional() @IsUUID()
-  groupId?: string;
+  courseId?: string;
 
   @ApiPropertyOptional({ enum: PaymentStatus })
   @IsOptional() @IsEnum(PaymentStatus)

@@ -15,11 +15,11 @@ export class CreatePaymentDto {
   @IsUUID()
   studentId!: string;
 
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: 'uuid', description: 'Sotib olinayotgan kurs' })
   @IsUUID()
-  groupId!: string;
+  courseId!: string;
 
-  @ApiProperty({ example: 500000 })
+  @ApiProperty({ example: 690000 })
   @IsNumber() @IsPositive()
   amount!: number;
 
@@ -34,10 +34,6 @@ export class CreatePaymentDto {
   @ApiPropertyOptional({ description: "To'lov sanasi (paid bo'lsa avto: hozir)" })
   @IsOptional() @IsDateString()
   paidAt?: string;
-
-  @ApiProperty({ example: '2026-10-01' })
-  @IsDateString()
-  dueDate!: string;
 
   @ApiPropertyOptional({ description: "Tashqi to'lov tizimi tranzaksiya IDsi" })
   @IsOptional() @IsString()

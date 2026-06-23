@@ -28,8 +28,7 @@ import { UpdateStudentDto } from './dto/update-student.dto';
 import { QueryStudentsDto } from './dto/query-students.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { AVATAR_OPTIONS, buildMulterOptions, fileToUrl } from '../common/utils/multer.config';
-import { AttendanceService } from '../attendance/attendance.service';
-import { AssignmentsService } from '../assignments/assignments.service';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { PaymentsService } from '../payments/payments.service';
 
 @ApiTags('Admin · Students')
@@ -39,13 +38,12 @@ import { PaymentsService } from '../payments/payments.service';
 export class StudentsController {
   constructor(
     private readonly studentsService: StudentsService,
-    private readonly attendanceService: AttendanceService,
-    private readonly assignmentsService: AssignmentsService,
+    private readonly enrollmentsService: EnrollmentsService,
     private readonly paymentsService: PaymentsService,
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Talabalar ro\'yxati (pagination + filter)' })
+  @ApiOperation({ summary: "Talabalar ro'yxati (pagination + filter)" })
   list(@Query() q: QueryStudentsDto) {
     return this.studentsService.list(q);
   }
@@ -79,20 +77,14 @@ export class StudentsController {
     return this.studentsService.remove(id);
   }
 
-  @Get(':id/attendance')
-  @ApiOperation({ summary: "Talaba davomat tarixi (statistika bilan)" })
-  attendanceHistory(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.attendanceService.studentHistory(id);
-  }
-
-  @Get(':id/grades')
-  @ApiOperation({ summary: "Talaba baholar tarixi (vazifalar)" })
-  gradesHistory(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.assignmentsService.studentGrades(id);
+  @Get(':id/enrollments')
+  @ApiOperation({ summary: "Talabaning kurslari (enrollment + progress)" })
+  enrollments(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.enrollmentsService.studentEnrollments(id);
   }
 
   @Get(':id/payments')
-  @ApiOperation({ summary: "Talaba to'lov tarixi (totalPaid + totalPending bilan)" })
+  @ApiOperation({ summary: "Talaba to'lov tarixi (totalPaid bilan)" })
   paymentsHistory(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.paymentsService.studentHistory(id);
   }

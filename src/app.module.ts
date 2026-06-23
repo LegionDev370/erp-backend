@@ -12,16 +12,17 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { StudentsModule } from './students/students.module';
-import { TeachersModule } from './teachers/teachers.module';
+import { InstructorsModule } from './instructors/instructors.module';
 import { CoursesModule } from './courses/courses.module';
-import { GroupsModule } from './groups/groups.module';
-import { ScheduleModule } from './schedule/schedule.module';
-import { AttendanceModule } from './attendance/attendance.module';
-import { AssignmentsModule } from './assignments/assignments.module';
-import { ExamsModule } from './exams/exams.module';
+import { EnrollmentsModule } from './enrollments/enrollments.module';
+import { ProgressModule } from './progress/progress.module';
+import { CertificatesModule } from './certificates/certificates.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { PaymentsModule } from './payments/payments.module';
-import { FinanceModule } from './finance/finance.module';
 import { PublicModule } from './public/public.module';
+import { BlogModule } from './blog/blog.module';
+import { ContactModule } from './contact/contact.module';
+import { SeedModule } from './seed/seed.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -54,16 +55,17 @@ import { HealthController } from './health.controller';
     AuthModule,
     UsersModule,
     StudentsModule,
-    TeachersModule,
+    InstructorsModule,
     CoursesModule,
-    GroupsModule,
-    ScheduleModule,
-    AttendanceModule,
-    AssignmentsModule,
-    ExamsModule,
+    EnrollmentsModule,
+    ProgressModule,
+    CertificatesModule,
+    ReviewsModule,
     PaymentsModule,
-    FinanceModule,
     PublicModule,
+    BlogModule,
+    ContactModule,
+    SeedModule,
   ],
   controllers: [HealthController],
 })

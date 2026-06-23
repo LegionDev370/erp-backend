@@ -91,6 +91,11 @@ export class CoursesService {
       dto.lessonsCount ??
       (dto.modules?.reduce((sum, m) => sum + (m.lessons?.length ?? 0), 0) ?? 0);
 
+    if (dto.instructorId) {
+      const instructor = await this.prisma.instructor.findUnique({ where: { id: dto.instructorId } });
+      if (!instructor) throw new NotFoundException("O'qituvchi (instructor) topilmadi");
+    }
+
     return this.prisma.course.create({
       data: {
         name: dto.name,
@@ -104,6 +109,8 @@ export class CoursesService {
         durationMonths: dto.durationMonths,
         lessonsCount,
         imageUrl: dto.imageUrl,
+        previewVideoUrl: dto.previewVideoUrl,
+        instructorId: dto.instructorId,
         isFeatured: dto.isFeatured ?? false,
         status: dto.status ?? 'draft',
         modules: dto.modules?.length
@@ -117,6 +124,9 @@ export class CoursesService {
                         title: l.title,
                         durationMinutes: l.durationMinutes,
                         order: l.order,
+                        videoUrl: l.videoUrl,
+                        content: l.content,
+                        isPreview: l.isPreview ?? false,
                       })),
                     }
                   : undefined,
@@ -150,8 +160,14 @@ export class CoursesService {
     if (dto.oldPrice !== undefined) data.oldPrice = dto.oldPrice;
     if (dto.durationMonths !== undefined) data.durationMonths = dto.durationMonths;
     if (dto.imageUrl !== undefined) data.imageUrl = dto.imageUrl;
+    if (dto.previewVideoUrl !== undefined) data.previewVideoUrl = dto.previewVideoUrl;
     if (dto.isFeatured !== undefined) data.isFeatured = dto.isFeatured;
     if (dto.status !== undefined) data.status = dto.status;
+    if (dto.instructorId !== undefined) {
+      data.instructor = dto.instructorId
+        ? { connect: { id: dto.instructorId } }
+        : { disconnect: true };
+    }
 
     if (dto.modules !== undefined) {
       const lessonsCount =
@@ -178,6 +194,9 @@ export class CoursesService {
                         title: l.title,
                         durationMinutes: l.durationMinutes,
                         order: l.order,
+                        videoUrl: l.videoUrl,
+                        content: l.content,
+                        isPreview: l.isPreview ?? false,
                       })),
                     }
                   : undefined,
@@ -204,6 +223,14 @@ export class CoursesService {
 
   private fullInclude() {
     return {
+      instructor: {
+        select: {
+          id: true,
+          specialty: true,
+          rating: true,
+          user: { select: { firstName: true, lastName: true, avatarUrl: true } },
+        },
+      },
       modules: {
         orderBy: { order: 'asc' as const },
         include: {

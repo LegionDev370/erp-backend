@@ -46,7 +46,7 @@ export class StudentsService {
         skip: q.skip,
         take: q.take,
         orderBy,
-        include: { user: this.userSelect() },
+        include: { user: this.userSelect(), _count: { select: { enrollments: true } } },
       }),
       this.prisma.student.count({ where }),
     ]);
@@ -60,7 +60,7 @@ export class StudentsService {
   async findOne(id: string) {
     const student = await this.prisma.student.findUnique({
       where: { id },
-      include: { user: this.userSelect() },
+      include: { user: this.userSelect(), _count: { select: { enrollments: true, certificates: true } } },
     });
     if (!student || student.user.deletedAt) {
       throw new NotFoundException("Talaba topilmadi");
@@ -104,11 +104,6 @@ export class StudentsService {
         data: {
           userId: user.id,
           studentId,
-          parentFirstName: dto.parentFirstName,
-          parentLastName: dto.parentLastName,
-          parentPhone: dto.parentPhone,
-          motherName: dto.motherName,
-          motherPhone: dto.motherPhone,
           enrolledAt: dto.enrolledAt ? new Date(dto.enrolledAt) : new Date(),
           status: dto.status ?? StudentStatus.active,
         },
@@ -131,7 +126,6 @@ export class StudentsService {
       throw new NotFoundException("Talaba topilmadi");
     }
 
-    // user maydonlari (faqat berilganlarini yangilaymiz)
     const userData: Prisma.UserUpdateInput = {};
     if (dto.email !== undefined) userData.email = dto.email;
     if (dto.phone !== undefined) userData.phone = dto.phone;
@@ -145,11 +139,6 @@ export class StudentsService {
     if (dto.userStatus !== undefined) userData.status = dto.userStatus;
 
     const studentData: Prisma.StudentUpdateInput = {};
-    if (dto.parentFirstName !== undefined) studentData.parentFirstName = dto.parentFirstName;
-    if (dto.parentLastName !== undefined) studentData.parentLastName = dto.parentLastName;
-    if (dto.parentPhone !== undefined) studentData.parentPhone = dto.parentPhone;
-    if (dto.motherName !== undefined) studentData.motherName = dto.motherName;
-    if (dto.motherPhone !== undefined) studentData.motherPhone = dto.motherPhone;
     if (dto.enrolledAt !== undefined) studentData.enrolledAt = new Date(dto.enrolledAt);
     if (dto.status !== undefined) studentData.status = dto.status;
 
@@ -188,7 +177,6 @@ export class StudentsService {
         where: { id },
         data: { status: StudentStatus.inactive },
       }),
-      // Sessiyalarni o'chiramiz
       this.prisma.session.deleteMany({ where: { userId: existing.user.id } }),
     ]);
 
@@ -242,8 +230,6 @@ export class StudentsService {
 
   private serialize(student: { user: Record<string, unknown> } & Record<string, unknown>) {
     const { user, ...studentRest } = student;
-    // user spread oxirida - user.id, user.createdAt va boshqa to'qnashuvchi maydonlarni
-    // alohida nomlar ostida qaytarish
     const { id: userId, createdAt: userCreatedAt, updatedAt: userUpdatedAt, ...userRest } = user;
     return {
       ...studentRest, // id = student.id (route paramlari uchun)
